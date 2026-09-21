@@ -22,6 +22,7 @@ to it, write down what you saw, and move on. That's a real observation about
 your pipeline, not giving up.
 """
 
+import re
 from dataclasses import dataclass
 
 import config
@@ -80,6 +81,80 @@ def fallback_split(
     return chunks
 
 
+def _paragraphs(text: str) -> list[str]:
+    return [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
+
+
+def _sentences(text: str) -> list[str]:
+    parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
+    return parts or [text.strip()]
+
+
+def _slice_text(text: str, chunk_size: int, overlap: int) -> list[str]:
+    if overlap >= chunk_size:
+        raise ValueError("overlap has to be smaller than chunk_size")
+
+    pieces: list[str] = []
+    start = 0
+    step = max(chunk_size - overlap, 1)
+    while start < len(text):
+        piece = text[start : start + chunk_size].strip()
+        if piece:
+            pieces.append(piece)
+        start += step
+    return pieces
+
+
+def _split_long_paragraph(paragraph: str, chunk_size: int, overlap: int) -> list[str]:
+    if len(paragraph) <= chunk_size:
+        return [paragraph.strip()]
+
+    sentences = _sentences(paragraph)
+    if len(sentences) == 1:
+        return _slice_text(paragraph, chunk_size, overlap)
+
+    pieces: list[str] = []
+    current = ""
+    for sentence in sentences:
+        candidate = sentence if not current else f"{current} {sentence}"
+        if len(candidate) <= chunk_size:
+            current = candidate
+            continue
+
+        if current:
+            pieces.append(current)
+
+        if len(sentence) > chunk_size:
+            pieces.extend(_slice_text(sentence, chunk_size, overlap))
+            current = ""
+        else:
+            current = sentence
+
+    if current:
+        pieces.append(current)
+
+    return [piece.strip() for piece in pieces if piece.strip()]
+
+
+def _tail_for_overlap(pieces: list[str], overlap: int) -> list[str]:
+    if overlap <= 0:
+        return []
+
+    carry: list[str] = []
+    total = 0
+    for piece in reversed(pieces):
+        piece_length = len(piece)
+        extra = piece_length if not carry else piece_length + 2
+        if carry and total + extra > overlap:
+            break
+        if not carry and piece_length > overlap:
+            break
+        carry.insert(0, piece)
+        total += extra
+
+    return carry
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
     Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
@@ -97,7 +172,57 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
       - Would splitting on paragraph breaks keep more thoughts intact than
         splitting on a character count?
     """
-    return fallback_split(documents)
+    chunk_size = config.CHUNK_SIZE
+    overlap = config.CHUNK_OVERLAP
+
+    chunks: list[Chunk] = []
+    for doc in documents:
+        pieces: list[str] = []
+        for paragraph in _paragraphs(doc.text):
+            pieces.extend(_split_long_paragraph(paragraph, chunk_size, overlap))
+
+        if not pieces:
+            continue
+
+        current: list[str] = []
+        index = 0
+        i = 0
+        while i < len(pieces):
+            piece = pieces[i]
+            joined = "\n\n".join(current + [piece]) if current else piece
+
+            if current and len(joined) > chunk_size:
+                text = "\n\n".join(current).strip()
+                if text:
+                    chunks.append(
+                        Chunk(
+                            text=text,
+                            source=doc.source,
+                            index=index,
+                            produced_by="chunker.py::split_documents",
+                        )
+                    )
+                    index += 1
+
+                current = _tail_for_overlap(current, overlap)
+                continue
+
+            current.append(piece)
+            i += 1
+
+        if current:
+            text = "\n\n".join(current).strip()
+            if text:
+                chunks.append(
+                    Chunk(
+                        text=text,
+                        source=doc.source,
+                        index=index,
+                        produced_by="chunker.py::split_documents",
+                    )
+                )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:

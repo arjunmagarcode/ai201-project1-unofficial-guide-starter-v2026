@@ -23,8 +23,9 @@ For at least 4 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
 **Why this target:**
-<!-- e.g. "One of my questions is about a topic only two documents mention, so
-     I expect that one to be hard." -->
+Most of my questions point to a single short post, but the Kestrel Commons one
+also has a follow-up file, so 4 of 5 leaves room for the harder retrieval
+without pretending every question is equally easy.
 
 ---
 
@@ -33,8 +34,9 @@ contains the answer.
 Every answer the system produces names at least one source document.
 
 **Why this target:**
-<!-- Why all five and not four? What about your setup makes that achievable —
-     or what would have to go wrong for it not to be? -->
+These posts are short enough that a grounded answer should always be able to
+say where it came from, and an answer without a source is not useful to a
+student even if the fact happens to be right.
 
 ---
 
@@ -50,53 +52,37 @@ in at least 4 of 5 tries.
      just keep five of them, or the "4 of 5" above has nothing to be 4 of. -->
 
 **Why this target:**
-<!-- What did your distances look like when you set the cutoff in Milestone 4?
-     Was there a clean gap, or did the two groups overlap? -->
+The in-corpus questions cluster well below the off-topic ones, so the cutoff
+can sit in the gap instead of forcing me to choose between refusing real
+questions or letting unrelated ones through.
 
 ---
 
 ## 4. Something about your chunks
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
-
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
-
-
+For at least 4 of my 5 sample chunks, the chunk reads as a complete thought
+that stays on one topic and does not cut a sentence in half.
 
 **Why this target:**
-
-
+Most campus_life documents are short blurbs, so if the sample chunks look like
+fragments or topic mashups, the chunker is cutting too aggressively for this
+corpus.
 
 ---
 
 ## 5. Your choice
 
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. It could be about
-     speed, about refusals, about a particular kind of question your corpus
-     handles badly, about source attribution being correct rather than merely
-     present — anything, as long as it names a number or an observable
-     outcome. -->
-
-
+For at least 4 of my 5 answerable questions, the answer stays at three
+sentences or fewer.
 
 **Why this target:**
-
-
+These are short factual questions, so longer answers usually mean the model is
+adding filler or uncertainty instead of staying grounded in the retrieved
+chunks.
 
 ---
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-     UNIT 2 — read this before you change anything above.
+<!-- ── UNIT 2 — read this before you change anything above.
 
      If a criterion turns out to be BROKEN rather than merely unmet, you can
      revise it, and that earns credit. But never delete or edit the original
