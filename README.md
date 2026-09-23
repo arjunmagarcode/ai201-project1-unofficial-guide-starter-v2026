@@ -136,68 +136,139 @@ almost everything unsplit. I kept the paragraph-aware idea but tuned it down to
 
 # Unit 2
 
-> I confirmed the interpreter can load `GEMINI_API_KEY` from `.env`. The
-> questions, criteria, chunker, scorer, and cutoff are in place now, so the
-> remaining step is to run `run_eval.py` and paste the actual before/after run
-> logs into the tables below.
-
-I ran `python3 run_eval.py` once the key was in place. The run produced one
-missed criterion and four met ones in the before pass, and the gate refused all
-five out-of-scope questions.
+I ran `python3 run_eval.py --label before`. The complete evidence is in
+`results/run_2026-09-23_1819_before.md`, produced by
+`run_eval.py::main`. It contains three uncached generated answers for each of
+the five answerable questions. The later attempts returned a temporary Gemini
+503 error and are not part of this run log.
 
 ## Run Log — Before
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 | fail | fail | fail | MISS |
-| 2. Every answer names a source | 5 of 5 | pass | pass | pass | MET |
-| 3. Gate stops out-of-corpus questions | 4 of 5 | pass | pass | pass | MET |
-| 4. Something about your chunks | 4 of 5 | pass | pass | pass | MET |
-| 5. Your choice | 4 of 5 | pass | pass | pass | MET |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Something about your chunks | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Your choice | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-The raw output showed the one miss clearly: the housing lottery answer was
-correct, but the scorer expected the exact phrase `not random`, and the model
-answered with `not entirely random`. Everything else passed, including the gate
-refusing all five out-of-scope questions.
+The answer-dependent criteria were stable across all three uncached runs. The
+housing question was the one scored as a failure in criterion 1 because
+`scorer.py::judge` required the exact phrase `not random`, while the generated
+answer said `not entirely random`. The relevant source was still retrieved.
+Criterion 3 is identical in all three columns because
+`run_eval.py::check_out_of_scope` performs deterministic retrieval and gate
+checks once; refused questions do not call the model.
 
-## Verdicts
+## Real Output
 
-| # | Criterion | Verdict | How I decided |
-|---|---|---|---|
-| 1 | Retrieved chunks contain the answer | MISS | The relevant chunk was retrieved, but the answer text missed the exact `expects` phrase, so the scorer marked it wrong. |
-| 2 | Every answer names a source | MET | All three runs included an explicit source document in the answer text. |
-| 3 | The relevance gate stops out-of-corpus questions | MET | The gate refused all 5 of 5 out-of-scope questions at the 0.6 cutoff. |
-| 4 | Something about your chunks | MET | The sample chunks read as complete thoughts and stayed on one topic. |
-| 5 | Your choice | MET | Every answerable question stayed within three sentences. |
+The following is copied from `results/run_2026-09-23_1819_before.md`, rather
+than summarized. Generated answers came from `run_eval.py::run_once`, which
+calls `generate.py::answer_from_chunks`; pass/fail marks came from
+`scorer.py::judge`.
 
-## Diagnoses
+### Criterion 1 — Retrieved answers
 
-Criterion 1 failed in generation/scoring, not retrieval. The relevant housing chunk was retrieved and the answer was factually right, but the scorer was too strict about the exact wording of the expected phrase, so `not entirely random` did not count as `not random`.
+```text
+The housing lottery is not entirely random for everyone. While rising sophomores get a number drawn at random, juniors and seniors are ordered by accumulated credit hours first, with random selection used only as a tie-breaker.
 
-## The Improvement
+Source: `admin_housing_lottery.txt`
+```
 
-**What I changed:** I replaced the starter chunker with a paragraph-aware splitter and tightened the chunk size to 400 characters with 80 characters of overlap.
+```text
+You can declare a course outside your major as pass/fail as late as week eight, after you've seen your midterm. (Source: admin_pass_fail_option.txt)
+```
 
-**Why I picked it:** The corpus is mostly short, self-contained posts, but the longest documents were still long enough to justify splitting them without slicing them at arbitrary character boundaries.
+```text
+Based on the documents, wait times at Kestrel Commons are 20 to 25 minutes between 12:15 and 1:00, and under 5 minutes before 11:45.
 
-### Run Log — After
+Source: `dining_kestrel_commons.txt`
+```
 
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
-|---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 | fail | fail | fail | MISS |
-| 2. Every answer names a source | 5 of 5 | pass | pass | pass | MET |
-| 3. Gate stops out-of-corpus questions | 4 of 5 | pass | pass | pass | MET |
-| 4. Something about your chunks | 4 of 5 | pass | pass | pass | MET |
-| 5. Your choice | 4 of 5 | pass | pass | pass | MET |
+```text
+The library is open until 2am during term.
 
-**Did it help?**
+Source: study_library_hours.txt
+```
 
-No. The after run matched the before run: the chunking change did not fix the one miss, because the failure was in the scorer's exact wording check, not in retrieval or chunking.
+```text
+The campus shuttle runs a loop every 20 minutes on weekdays (transit_shuttle.txt).
+```
 
-## What's Still Broken
+### Criterion 2 — Source names
 
-Criterion 1 is still too brittle. The model answered the housing question correctly, but the scorer only accepts an exact phrase match, so a correct paraphrase still counts as wrong.
+```text
+Source: `admin_housing_lottery.txt`
+Source: admin_pass_fail_option.txt
+Source: `dining_kestrel_commons.txt`
+Source: study_library_hours.txt
+(transit_shuttle.txt)
+```
 
-## What I'd Do Differently
+### Criterion 3 — Out-of-corpus gate output
 
-I would write the scorer for criterion 1 to allow small wording variants like `not entirely random` instead of requiring one exact phrase, because the current version measures wording more than meaning.
+Produced by `run_eval.py::check_out_of_scope`:
+
+```text
+refused  (best distance 0.825)  What is the capital of Mongolia?
+refused  (best distance 0.934)  How do I change the oil in a diesel engine?
+refused  (best distance 0.886)  Who won the 1994 World Cup?
+refused  (best distance 0.844)  What is the recommended dosage of ibuprofen for a headache?
+refused  (best distance 0.891)  How do I write a for loop in Rust?
+-> gate refused 5 of 5
+```
+
+### Criterion 4 — Sample chunks
+
+Produced by `chunker.py::split_documents`:
+
+```text
+On the add/drop deadline
+
+You can add a course through the end of the second week. Dropping is a longer
+window — through the end of week six — but a drop after week two shows as a W
+on your transcript.
+```
+
+```text
+On the campus jobs and financial aid
+
+Work-study earnings don't count against your financial aid the way ordinary
+income does. Non-work-study campus jobs pay the same and do count.
+```
+
+```text
+On the declaring a major
+
+You declare at the end of your second semester, or later if you need to.
+There's no penalty for declaring late and no advantage to declaring early.
+```
+
+```text
+On the dining dollars
+
+Declining balance — what everyone calls dining dollars — rolls over from the
+autumn semester to the spring, but not from spring to the following autumn.
+```
+
+```text
+On the grade appeals
+
+A grade appeal starts with the instructor and has to be raised within fifteen
+days of the grade posting. Only after that does it go to the department.
+```
+
+### Criterion 5 — Answer length
+
+Produced by `run_eval.py::run_once` and `generate.py::answer_from_chunks`:
+
+```text
+The housing lottery is not entirely random for everyone. While rising sophomores get a number drawn at random, juniors and seniors are ordered by accumulated credit hours first, with random selection used only as a tie-breaker. Source: `admin_housing_lottery.txt`
+```
+
+```text
+You can declare a course outside your major as pass/fail as late as week eight, after you've seen your midterm. (Source: admin_pass_fail_option.txt)
+```
+
+All five answerable responses were three sentences or fewer in each of the
+three runs.
