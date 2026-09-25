@@ -152,6 +152,20 @@ the five answerable questions. The later attempts returned a temporary Gemini
 | 4. Something about your chunks | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 5. Your choice | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
+## How I Decided
+
+- **Criterion 1 — MET:** The target was at least 4 of 5, and each run reached
+	4/5, so the target held across all three runs.
+- **Criterion 2 — MET:** The target was 5 of 5, and all five answers named a
+	source in every run.
+- **Criterion 3 — MET:** The target was at least 4 of 5, and the gate refused
+	5/5 out-of-corpus questions; the same result is repeated because the gate
+	check is deterministic.
+- **Criterion 4 — MET:** The target was at least 4 of 5 sample chunks, and all
+	five reviewed chunks were complete thoughts that stayed on one topic.
+- **Criterion 5 — MET:** The target was at least 4 of 5 answerable questions,
+	and all five answers stayed within three sentences in every run.
+
 The answer-dependent criteria were stable across all three uncached runs. The
 housing question was the one scored as a failure in criterion 1 because
 `scorer.py::judge` required the exact phrase `not random`, while the generated
