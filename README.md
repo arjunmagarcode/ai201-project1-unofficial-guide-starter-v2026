@@ -374,6 +374,44 @@ paragraph-aware chunker did not change the measured scores because the corpus
 already consisted mostly of short, retrievable posts, and the remaining
 criterion 1 issue was caused by exact-string scoring rather than retrieval.
 
+## Stretch Run Log — Hybrid Retrieval
+
+The declared second improvement is implemented in
+`store.py::_hybrid_search`. It uses BM25 keyword scores from `rank_bm25` to
+adjust the semantic ranking, while leaving the original `default` search path
+unchanged. This targets exact names, numbers, and phrases that semantic search
+can underweight.
+
+The third run log is `results/run_2026-09-27_1710_hybrid.md`, produced by
+`run_eval.py::main` with `--variant hybrid`, caching off, and three runs per
+answerable question.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Something about your chunks | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Your choice | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+Real output from `run_eval.py::run_once` and
+`generate.py::answer_from_chunks` included:
+
+```text
+The housing lottery is not entirely random. While rising sophomores get a number drawn at random, juniors and seniors are ordered first by accumulated credit hours, with random selection used only as a tie-breaker (*admin_housing_lottery.txt*).
+```
+
+```text
+You can declare a course outside your major as pass/fail as late as week eight, after you've seen your midterm (admin_pass_fail_option.txt).
+```
+
+The hybrid run did not improve the criterion counts: the original after run
+was 4/5, 5/5, 5/5, 5/5, 5/5 in all three runs, and the hybrid run produced
+the same counts in all three runs. It did lower the best distances for the
+answerable questions, for example from 0.254 to 0.154 on the housing question,
+but that did not change the pass/fail results or the gate outcome. The stretch
+was measured successfully but did not improve the tested criteria.
+
 ## What's Still Broken
 
 The retrieval system and the five stated targets met their thresholds, but the
