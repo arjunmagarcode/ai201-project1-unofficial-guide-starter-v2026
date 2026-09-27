@@ -301,3 +301,59 @@ You can declare a course outside your major as pass/fail as late as week eight, 
 
 All five answerable responses were three sentences or fewer in each of the
 three runs.
+
+## The Improvement
+
+I replaced the starter fixed-window chunking with the paragraph-aware
+`chunker.py::split_documents` strategy. It keeps paragraphs together when they
+fit within the 400-character limit, splits long paragraphs at sentence
+boundaries, and carries up to 80 characters of overlap into the next chunk.
+
+I chose this improvement because criterion 4 concerned complete thoughts and
+single topics, and the corpus is mostly short campus posts. A paragraph-aware
+strategy should reduce sentence fragments and preserve the context needed by
+retrieval. This was one change; I did not change the model, cutoff, top-k, or
+questions for the after run.
+
+## Run Log — After
+
+The after run is recorded in `results/run_2026-09-20_2051_after.md`, produced
+by `run_eval.py::main`, with caching off and three runs per answerable question.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Something about your chunks | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Your choice | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+Representative real output from `run_eval.py::run_once` and
+`generate.py::answer_from_chunks`:
+
+```text
+The housing lottery is not entirely random. While rising sophomores get a number drawn at random, juniors and seniors are ordered first by accumulated credit hours, with random tie-breaks used only for ties (admin_housing_lottery.txt).
+```
+
+```text
+You can declare a course pass/fail as late as week eight, after you've seen your midterm.
+
+Source: admin_pass_fail_option.txt
+```
+
+```text
+At Kestrel Commons, wait times are 20 to 25 minutes between 12:15 and 1:00, and under 5 minutes before 11:45. Source: dining_kestrel_commons.txt
+```
+
+```text
+The library is open until 2am during term. Source: study_library_hours.txt
+```
+
+```text
+The campus shuttle runs a loop every 20 minutes on weekdays (transit_shuttle.txt).
+```
+
+The after run produced the same criterion counts as the before run. The
+paragraph-aware chunker did not change the measured scores because the corpus
+already consisted mostly of short, retrievable posts, and the remaining
+criterion 1 issue was caused by exact-string scoring rather than retrieval.
