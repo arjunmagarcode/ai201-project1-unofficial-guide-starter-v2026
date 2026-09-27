@@ -181,6 +181,12 @@ The chunking change was aimed at preventing sentence or topic cuts. The five
 sample chunks were already complete and focused, so the before result gave no
 evidence of a chunking miss to fix.
 
+Because no criterion fell below its target, there is no missed criterion with
+a pipeline failure to diagnose. The criterion I would tighten is criterion 4:
+next time I would require **5 of 5** sampled chunks to be complete, focused
+thoughts, instead of 4 of 5. That stricter target would make the chunking test
+more demanding for a corpus whose documents are mostly short posts.
+
 The answer-dependent criteria were stable across all three uncached runs. The
 housing question was the one scored as a failure in criterion 1 because
 `scorer.py::judge` required the exact phrase `not random`, while the generated
@@ -309,11 +315,13 @@ I replaced the starter fixed-window chunking with the paragraph-aware
 fit within the 400-character limit, splits long paragraphs at sentence
 boundaries, and carries up to 80 characters of overlap into the next chunk.
 
-I chose this improvement because criterion 4 concerned complete thoughts and
-single topics, and the corpus is mostly short campus posts. A paragraph-aware
-strategy should reduce sentence fragments and preserve the context needed by
-retrieval. This was one change; I did not change the model, cutoff, top-k, or
-questions for the after run.
+I chose this improvement because the baseline fixed-window mechanism could cut
+a sentence or join unrelated paragraphs even though the five sampled baseline
+chunks happened to pass. That observed chunking risk was the weakness this
+change was meant to address, especially for the stricter 5-of-5 version of
+criterion 4. A paragraph-aware strategy should reduce sentence fragments and
+preserve the context needed by retrieval. This was one change; I did not
+change the model, cutoff, top-k, or questions for the after run.
 
 ## Run Log — After
 
