@@ -27,6 +27,16 @@ Most of my questions point to a single short post, but the Kestrel Commons one
 also has a follow-up file, so 4 of 5 leaves room for the harder retrieval
 without pretending every question is equally easy.
 
+> **Revised in unit 2:** For at least 4 of 5 questions, the retrieved top-five
+> results contain a chunk with the answer, judged from the chunk text rather
+> than from the generated answer.
+>
+> **Why revised:** The original target was about retrieval, but `scorer.py::judge`
+> also required the generated answer to contain the exact phrase in `expects`.
+> The housing answer was factually correct and its source chunk was retrieved,
+> but the scorer marked it false because it said `not entirely random` instead
+> of `not random`. The revised wording measures retrieval directly.
+
 ---
 
 ## 2. Every answer names a source
