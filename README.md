@@ -357,3 +357,37 @@ The after run produced the same criterion counts as the before run. The
 paragraph-aware chunker did not change the measured scores because the corpus
 already consisted mostly of short, retrievable posts, and the remaining
 criterion 1 issue was caused by exact-string scoring rather than retrieval.
+
+## What's Still Broken
+
+The retrieval system and the five stated targets met their thresholds, but the
+criterion 1 measurement is still imperfect. `scorer.py::judge` combines
+retrieval, answer wording, and source naming into one Boolean result, so it can
+call a factually correct answer a failure when it uses a valid paraphrase such
+as `not entirely random` instead of the expected phrase `not random`.
+
+I stopped after one focused improvement because the chunking diagnosis did not
+predict a retrieval failure, and the after run confirmed that chunking did not
+change the result. The next fix would be to score criterion 1 from the
+retrieved chunk text directly, or to make the expected-answer check accept
+equivalent wording. I would not lower the original target just because the
+scorer was too strict.
+
+## What I'd Do Differently
+
+In the next unit I would write criterion 1 so that it names the observable
+measurement explicitly: whether one of the top-five retrieved chunks contains
+the answer. I would keep the 4-of-5 target, but separate retrieval correctness
+from generation wording and source citation. That would make the criterion
+more reproducible and would prevent a correct paraphrase from being counted as
+a retrieval failure.
+
+## How I Used AI in Unit 2
+
+I used AI to help interpret the run logs, check whether the three-run table
+matched the original targets, and identify that the housing result was an
+exact-phrase scoring problem rather than a retrieval problem. I checked those
+claims against the actual chunks, answers, and distances in the generated
+result files before writing the verdicts. I also used the existing chunking
+implementation and its measured before/after logs to describe the improvement,
+but the decisions and final comparisons are based on this repository's output.
