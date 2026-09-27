@@ -323,6 +323,14 @@ criterion 4. A paragraph-aware strategy should reduce sentence fragments and
 preserve the context needed by retrieval. This was one change; I did not
 change the model, cutoff, top-k, or questions for the after run.
 
+## Stretch Feature Declaration
+
+Before building the optional second improvement, I am declaring the stretch
+feature: a second measured improvement using hybrid retrieval. The `hybrid`
+variant will combine the existing semantic ranking with BM25 keyword scores so
+that exact names, numbers, and phrases can influence retrieval. I will measure
+it with a third three-run evaluation and report whether it helped.
+
 ## Run Log — After
 
 The after run is recorded in `results/run_2026-09-20_2051_after.md`, produced
