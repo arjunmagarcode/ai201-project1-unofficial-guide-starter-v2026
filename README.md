@@ -166,6 +166,21 @@ the five answerable questions. The later attempts returned a temporary Gemini
 - **Criterion 5 — MET:** The target was at least 4 of 5 answerable questions,
 	and all five answers stayed within three sentences in every run.
 
+## Diagnoses
+
+No criterion target was missed in the before run, so there is no pipeline
+failure to diagnose for a missed target. The close finding was criterion 1's
+measurement: retrieval found `admin_housing_lottery.txt`, but
+`scorer.py::judge` marked the answer false at the generation/scoring stage
+because it required the exact phrase `not random`; the answer said `not
+entirely random`. This was an exact-string scoring mechanism, not a chunking or
+retrieval failure, so I revised criterion 1 in `criteria.md` to judge the
+retrieved chunk directly.
+
+The chunking change was aimed at preventing sentence or topic cuts. The five
+sample chunks were already complete and focused, so the before result gave no
+evidence of a chunking miss to fix.
+
 The answer-dependent criteria were stable across all three uncached runs. The
 housing question was the one scored as a failure in criterion 1 because
 `scorer.py::judge` required the exact phrase `not random`, while the generated
