@@ -18,6 +18,7 @@ rest of the project if they were wrong:
 """
 
 import os
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -199,6 +200,9 @@ def search(
             f"No index called '{name}'. Run `python app.py index` first."
         ) from exc
 
+    if variant == "hybrid":
+        return _hybrid_search(collection, question, top_k)
+
     raw = collection.query(
         query_embeddings=embed([question]),
         n_results=min(top_k, collection.count()),
@@ -218,6 +222,41 @@ def search(
             )
         )
     return results
+
+
+def _hybrid_search(collection, question: str, top_k: int) -> list[Result]:
+    """Blend semantic distance with BM25 keyword relevance."""
+    from rank_bm25 import BM25Okapi
+
+    raw = collection.query(
+        query_embeddings=embed([question]),
+        n_results=collection.count(),
+    )
+    documents = raw["documents"][0]
+    metadatas = raw["metadatas"][0]
+    distances = raw["distances"][0]
+    tokenize = lambda text: re.findall(r"[a-z0-9]+", text.lower())
+    tokenized_documents = [tokenize(document) for document in documents]
+    scores = BM25Okapi(tokenized_documents).get_scores(tokenize(question))
+    maximum = max(scores) if scores.size else 0.0
+
+    ranked = []
+    for text, meta, distance, score in zip(documents, metadatas, distances, scores):
+        keyword_relevance = score / maximum if maximum > 0 else 0.0
+        combined_distance = float(distance) - 0.1 * keyword_relevance
+        ranked.append((combined_distance, text, meta))
+
+    ranked.sort(key=lambda item: item[0])
+    return [
+        Result(
+            text=text,
+            source=str(meta.get("source", "unknown")),
+            label=f"{meta.get('source', 'unknown')}#{meta.get('index', 0)}",
+            distance=distance,
+            produced_by=str(meta.get("produced_by", "unknown")),
+        )
+        for distance, text, meta in ranked[:top_k]
+    ]
 
 
 def index_exists(corpus: str | None = None, variant: str = "default") -> bool:
