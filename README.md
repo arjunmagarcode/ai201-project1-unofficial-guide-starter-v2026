@@ -152,7 +152,7 @@ the five answerable questions. The later attempts returned a temporary Gemini
 | 4. Something about your chunks | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 5. Your choice | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-## How I Decided
+## Verdicts
 
 - **Criterion 1 — MET:** The target was at least 4 of 5, and each run reached
 	4/5, so the target held across all three runs.
